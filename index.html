@@ -30,7 +30,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      pointer-events: none; /* 背景は透過、内部は個別に操作 */
+      pointer-events: none;
     }
     /* 上部コントロール：上端から10px、固定高さ60px */
     #topControls {
@@ -39,7 +39,7 @@
       left: 10px;
       right: 10px;
       height: 60px;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       color: #fff;
       text-align: center;
       padding-top: 10px;
@@ -47,21 +47,21 @@
       z-index: 1000;
       border-radius: 5px;
     }
-    /* 下部コントロールパネル：下端から10px、最大高さ40%に設定し、内容が多い場合はスクロール可能 */
+    /* 下部コントロールパネル：下端から10px、最大高さ40%、スクロール可能 */
     #bottomControls {
       position: absolute;
       bottom: 10px;
       left: 10px;
       right: 10px;
       max-height: 40%;
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255,255,255,0.95);
       pointer-events: auto;
       z-index: 1000;
       border-radius: 5px;
       padding: 10px;
       overflow-y: auto;
     }
-    /* 各ボタンや入力、セレクトボックスのスタイル */
+    /* 各ボタン・入力・セレクトボックスのスタイル */
     #bottomControls button,
     #bottomControls select,
     #bottomControls input {
@@ -185,7 +185,7 @@
     function updateTotalDistanceDisplay() {
       document.getElementById('totalDistance').innerText = getTotalDistance().toFixed(2);
     }
-    // 「今回の走行距離」は、未保存セッションの場合は、保存済みセッションがあればその最終更新点を基準とし、なければ未保存セッションの最初の更新点を基準とする
+    // 「今回の走行距離」：基準は、保存済みセッションがあればその最終更新点、なければ未保存セッションの最初の更新点
     function updateCurrentSessionDistance() {
       var sd = 0;
       if (currentSession.length > 0) {
@@ -378,14 +378,17 @@
     
     /***** 「ルートリセット」ボタン *****/
     document.getElementById('resetBtn').addEventListener('click', function() {
-      if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
-      currentSessionMarkers.forEach(function(marker) { map.removeLayer(marker); });
-      if (currentSessionPolyline) { map.removeLayer(currentSessionPolyline); currentSessionPolyline = null; }
+      // すべてのレイヤー（TileLayer以外）を一括削除する方法
+      var layers = [];
       map.eachLayer(function(layer) {
-        if (layer instanceof L.Polyline && !(layer instanceof L.TileLayer)) {
+        layers.push(layer);
+      });
+      layers.forEach(function(layer) {
+        if (!(layer instanceof L.TileLayer)) {
           map.removeLayer(layer);
         }
       });
+      // 変数リセット
       sessions = [];
       currentSession = [];
       currentSessionMarkers = [];
@@ -414,11 +417,16 @@
     }
     
     /***** 保存済みデータのロード処理 *****/
+    // 保存済みセッションの各中継点マーカーはドラッグ不可とし、
+    // ロード後、記録されたルート全域に画面が収まるように map.fitBounds() を呼び出す
     function loadData(index) {
       var data = savedDataList[index];
       if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
-      map.eachLayer(function(layer) {
-        if (layer instanceof L.Polyline && !(layer instanceof L.TileLayer)) {
+      // TileLayer 以外のすべてのレイヤーを削除
+      var layers = [];
+      map.eachLayer(function(layer) { layers.push(layer); });
+      layers.forEach(function(layer) {
+        if (!(layer instanceof L.TileLayer)) {
           map.removeLayer(layer);
         }
       });
@@ -433,15 +441,19 @@
                        .bindPopup("出発地点")
                        .openPopup();
       }
+      var allPoints = [];
+      if (data.start) { allPoints.push(L.latLng(data.start.lat, data.start.lng)); }
       data.sessions.forEach(function(sess, sIdx) {
         sessions.push(sess);
         var pts = [];
         var baseline = (sIdx === 0) ? 0 : data.sessions[sIdx-1].updates[data.sessions[sIdx-1].updates.length - 1].cumulative;
         var sessionDistance = sess.updates[sess.updates.length - 1].cumulative - baseline;
         sess.updates.forEach(function(update, idx) {
-          pts.push(L.latLng(update.lat, update.lng));
+          var pt = L.latLng(update.lat, update.lng);
+          pts.push(pt);
+          allPoints.push(pt);
           var markerContent = "<div class='update-marker' style='background:" + sess.color + "'></div>";
-          var m = L.marker(L.latLng(update.lat, update.lng), { 
+          var m = L.marker(pt, { 
               icon: L.divIcon({ 
                 html: markerContent, 
                 className: "", 
@@ -458,6 +470,11 @@
         }
       });
       updateTotalDistanceDisplay();
+      // MAP全体に収まるようにフィット
+      if (allPoints.length > 0) {
+        var bounds = L.latLngBounds(allPoints);
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
       var linkLatLng = null;
       if (sessions.length > 0) {
         var lastSess = sessions[sessions.length - 1];
