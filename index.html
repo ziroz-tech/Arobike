@@ -8,7 +8,7 @@
   <!-- LeafletのCSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* コンテナ全体（全画面表示） */
+    /* 画面全体を覆うコンテナ */
     #container {
       position: relative;
       height: 100vh;
@@ -32,7 +32,7 @@
       bottom: 0;
       pointer-events: none; /* 背景は透過、内部は個別に操作 */
     }
-    /* 上部コントロール（タイトル入力用）：上端から10px、固定高さ60px */
+    /* 上部コントロール：上端から10px、固定高さ60px */
     #topControls {
       position: absolute;
       top: 10px;
@@ -47,20 +47,21 @@
       z-index: 1000;
       border-radius: 5px;
     }
-    /* 下部コントロールパネル：下端から10px、固定高さ160px */
+    /* 下部コントロールパネル：下端から10px、最大高さ40%に設定し、内容が多い場合はスクロール可能 */
     #bottomControls {
       position: absolute;
       bottom: 10px;
       left: 10px;
       right: 10px;
-      height: 160px;
+      max-height: 40%;
       background: rgba(255, 255, 255, 0.95);
       pointer-events: auto;
       z-index: 1000;
       border-radius: 5px;
       padding: 10px;
+      overflow-y: auto;
     }
-    /* 各コントロールのスタイル */
+    /* 各ボタンや入力、セレクトボックスのスタイル */
     #bottomControls button,
     #bottomControls select,
     #bottomControls input {
@@ -170,7 +171,6 @@
     var unsavedColor = "#000000"; // 未保存セッションの色
     
     /***** 累積距離関連 *****/
-    // 現在の累積距離：未保存セッションがあればその最新、なければ最後の保存済みセッションの最終更新
     function getTotalDistance() {
       if (currentSession.length > 0) {
         return currentSession[currentSession.length - 1].cumulative;
@@ -185,7 +185,7 @@
     function updateTotalDistanceDisplay() {
       document.getElementById('totalDistance').innerText = getTotalDistance().toFixed(2);
     }
-    // 「今回の走行距離」：基準は、保存済みセッションがあればその最終更新点、なければ未保存セッションの最初の更新点
+    // 「今回の走行距離」は、未保存セッションの場合は、保存済みセッションがあればその最終更新点を基準とし、なければ未保存セッションの最初の更新点を基準とする
     function updateCurrentSessionDistance() {
       var sd = 0;
       if (currentSession.length > 0) {
@@ -330,7 +330,6 @@
           previousCumulative = lastSess.updates[lastSess.updates.length - 1].cumulative;
         }
       }
-      // 基準は、保存済みセッションがあればその最終更新、なければ未保存セッションの最初
       var base = (sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) ? sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative : currentSession[0].cumulative;
       var sessionDistance = currentSession[currentSession.length - 1].cumulative - base;
       var sessionObj = {
@@ -415,8 +414,6 @@
     }
     
     /***** 保存済みデータのロード処理 *****/
-    // 保存済みセッションの各中継点マーカーはドラッグ不可とし、
-    // ポップアップはそのセッションの保存日時と、前セッションの最終更新値を基準とした「今回の走行距離」を表示
     function loadData(index) {
       var data = savedDataList[index];
       if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
@@ -439,7 +436,6 @@
       data.sessions.forEach(function(sess, sIdx) {
         sessions.push(sess);
         var pts = [];
-        // 基準値は、セッション 0 なら 0、以降は前セッションの最終更新値
         var baseline = (sIdx === 0) ? 0 : data.sessions[sIdx-1].updates[data.sessions[sIdx-1].updates.length - 1].cumulative;
         var sessionDistance = sess.updates[sess.updates.length - 1].cumulative - baseline;
         sess.updates.forEach(function(update, idx) {
@@ -455,7 +451,6 @@
             })
             .addTo(map)
             .bindPopup("更新日時: " + sess.sessionDatetime + "<br>今回の走行距離: " + sessionDistance.toFixed(2) + " km");
-          // ドラッグ不可
           m.dragging.disable();
         });
         if (pts.length > 0) {
