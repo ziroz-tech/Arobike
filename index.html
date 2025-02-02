@@ -8,7 +8,7 @@
   <!-- LeafletのCSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* 画面全体を覆うコンテナ */
+    /* コンテナ全体（全画面表示） */
     #container {
       position: relative;
       height: 100vh;
@@ -23,36 +23,44 @@
       right: 0;
       bottom: 0;
     }
-    /* オーバーレイ（上部と下部） */
+    /* オーバーレイ領域 */
     #overlay {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      pointer-events: none; /* 背景として扱い、内部要素は個別に操作可能 */
+      pointer-events: none; /* 背景は透過、内部は個別に操作 */
     }
-    /* 上部コントロール：MAPタイトル等 */
+    /* 上部コントロール（タイトル入力用）：上端から10px、固定高さ60px */
     #topControls {
       position: absolute;
       top: 10px;
       left: 10px;
       right: 10px;
-      pointer-events: auto;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
       text-align: center;
+      padding-top: 10px;
+      pointer-events: auto;
+      z-index: 1000;
+      border-radius: 5px;
     }
-    /* 下部コントロールパネル */
+    /* 下部コントロールパネル：下端から10px、固定高さ160px */
     #bottomControls {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      height: 160px;
+      background: rgba(255, 255, 255, 0.95);
       pointer-events: auto;
-      background: rgba(255, 255, 255, 0.9);
+      z-index: 1000;
+      border-radius: 5px;
       padding: 10px;
-      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
     }
-    /* 各ボタンや入力、セレクトボックスのスタイル */
+    /* 各コントロールのスタイル */
     #bottomControls button,
     #bottomControls select,
     #bottomControls input {
@@ -65,7 +73,7 @@
       font-size: 16px;
       width: 80%;
     }
-    /* 数値表示用（累積走行距離、今回の走行距離） */
+    /* 数値表示用 */
     .display {
       font-size: 18px;
       margin: 5px 0;
@@ -91,7 +99,7 @@
       font-size: 16px;
     }
     #gmapsLink:hover { background-color: #218838; }
-    /* 中継点マーカー：シンプルな円形（サイズ24×24、中心表示） */
+    /* 中継点マーカー：シンプルな円形（サイズ24×24、中央表示） */
     .update-marker {
       background-color: inherit;
       border: 2px solid #fff;
@@ -177,7 +185,7 @@
     function updateTotalDistanceDisplay() {
       document.getElementById('totalDistance').innerText = getTotalDistance().toFixed(2);
     }
-    // 「今回の走行距離」は、未保存セッションの場合、基準を「前回の最後の更新点」(保存済みがあればその最終更新、なければ未保存セッションの最初の更新点)とする
+    // 「今回の走行距離」：基準は、保存済みセッションがあればその最終更新点、なければ未保存セッションの最初の更新点
     function updateCurrentSessionDistance() {
       var sd = 0;
       if (currentSession.length > 0) {
@@ -322,7 +330,7 @@
           previousCumulative = lastSess.updates[lastSess.updates.length - 1].cumulative;
         }
       }
-      // 「今回の走行距離」は、保存済みがあればその最終更新を基準、なければ未保存セッションの最初を基準とする
+      // 基準は、保存済みセッションがあればその最終更新、なければ未保存セッションの最初
       var base = (sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) ? sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative : currentSession[0].cumulative;
       var sessionDistance = currentSession[currentSession.length - 1].cumulative - base;
       var sessionObj = {
@@ -431,13 +439,13 @@
       data.sessions.forEach(function(sess, sIdx) {
         sessions.push(sess);
         var pts = [];
+        // 基準値は、セッション 0 なら 0、以降は前セッションの最終更新値
         var baseline = (sIdx === 0) ? 0 : data.sessions[sIdx-1].updates[data.sessions[sIdx-1].updates.length - 1].cumulative;
         var sessionDistance = sess.updates[sess.updates.length - 1].cumulative - baseline;
         sess.updates.forEach(function(update, idx) {
           pts.push(L.latLng(update.lat, update.lng));
           var markerContent = "<div class='update-marker' style='background:" + sess.color + "'></div>";
           var m = L.marker(L.latLng(update.lat, update.lng), { 
-              // ドラッグ不可
               icon: L.divIcon({ 
                 html: markerContent, 
                 className: "", 
@@ -447,6 +455,8 @@
             })
             .addTo(map)
             .bindPopup("更新日時: " + sess.sessionDatetime + "<br>今回の走行距離: " + sessionDistance.toFixed(2) + " km");
+          // ドラッグ不可
+          m.dragging.disable();
         });
         if (pts.length > 0) {
           L.polyline(pts, { color: sess.color, weight: 4, opacity: 0.7 }).addTo(map);
