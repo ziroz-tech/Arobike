@@ -2,18 +2,20 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>エアロバイク 中継点更新アプリ３</title>
+  <!-- スマホ向け viewport 設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>エアロバイク 中継点更新アプリ</title>
   <!-- LeafletのCSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* コンテナ全体を相対配置 */
+    /* 画面全体を覆うコンテナ */
     #container {
       position: relative;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
     }
-    /* MAPは画面全体に表示 */
+    /* MAPはコンテナ全体に表示 */
     #map {
       position: absolute;
       top: 0;
@@ -21,16 +23,16 @@
       right: 0;
       bottom: 0;
     }
-    /* オーバーレイパネル（上部と下部） */
+    /* オーバーレイ（上部と下部） */
     #overlay {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      pointer-events: none; /* 背景は透過し、内部は個別に操作可能 */
+      pointer-events: none; /* 背景として扱い、内部要素は個別に操作可能 */
     }
-    /* 上部：タイトル入力用 */
+    /* 上部コントロール：MAPタイトル等 */
     #topControls {
       position: absolute;
       top: 10px;
@@ -39,7 +41,7 @@
       pointer-events: auto;
       text-align: center;
     }
-    /* 下部：各種コントロールパネル */
+    /* 下部コントロールパネル */
     #bottomControls {
       position: absolute;
       bottom: 0;
@@ -48,10 +50,12 @@
       pointer-events: auto;
       background: rgba(255, 255, 255, 0.9);
       padding: 10px;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
     }
-    /* 各コントロールのスタイル */
-    .controls button, .controls select, .controls input {
+    /* 各ボタンや入力、セレクトボックスのスタイル */
+    #bottomControls button,
+    #bottomControls select,
+    #bottomControls input {
       margin: 5px;
       font-size: 16px;
     }
@@ -61,22 +65,21 @@
       font-size: 16px;
       width: 80%;
     }
-    /* 数値表示 */
+    /* 数値表示用（累積走行距離、今回の走行距離） */
     .display {
       font-size: 18px;
       margin: 5px 0;
     }
-    /* 中継点マーカー：シンプルな円形（サイズ24×24、中央表示） */
-    .update-marker {
-      background-color: inherit;
-      border: 2px solid #fff;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      text-align: center;
-      line-height: 24px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+    /* 最新更新キャンセルボタン */
+    #cancelBtn {
+      background-color: #d9534f;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      padding: 8px 12px;
+      cursor: pointer;
     }
+    #cancelBtn:hover { background-color: #c9302c; }
     /* Google Mapsリンク */
     #gmapsLink {
       display: inline-block;
@@ -88,6 +91,17 @@
       font-size: 16px;
     }
     #gmapsLink:hover { background-color: #218838; }
+    /* 中継点マーカー：シンプルな円形（サイズ24×24、中心表示） */
+    .update-marker {
+      background-color: inherit;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      text-align: center;
+      line-height: 24px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
@@ -163,7 +177,7 @@
     function updateTotalDistanceDisplay() {
       document.getElementById('totalDistance').innerText = getTotalDistance().toFixed(2);
     }
-    // 「今回の走行距離」＝未保存セッションの場合は、基準を「前回の最後の更新点」(保存済みがあればその最終更新、なければ未保存セッションの最初)とする
+    // 「今回の走行距離」は、未保存セッションの場合、基準を「前回の最後の更新点」(保存済みがあればその最終更新、なければ未保存セッションの最初の更新点)とする
     function updateCurrentSessionDistance() {
       var sd = 0;
       if (currentSession.length > 0) {
@@ -308,7 +322,7 @@
           previousCumulative = lastSess.updates[lastSess.updates.length - 1].cumulative;
         }
       }
-      // 「今回の走行距離」は、保存済みがあればその最終更新点を基準、なければ未保存セッションの最初を基準
+      // 「今回の走行距離」は、保存済みがあればその最終更新を基準、なければ未保存セッションの最初を基準とする
       var base = (sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) ? sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative : currentSession[0].cumulative;
       var sessionDistance = currentSession[currentSession.length - 1].cumulative - base;
       var sessionObj = {
@@ -393,8 +407,8 @@
     }
     
     /***** 保存済みデータのロード処理 *****/
-    // 保存済みセッションの各中継点マーカーはドラッグ不可とし、ポップアップはそのセッションの保存日時と、
-    // 前セッションの最終更新値を基準とした「今回の走行距離」を表示します。
+    // 保存済みセッションの各中継点マーカーはドラッグ不可とし、
+    // ポップアップはそのセッションの保存日時と、前セッションの最終更新値を基準とした「今回の走行距離」を表示
     function loadData(index) {
       var data = savedDataList[index];
       if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
@@ -408,7 +422,6 @@
       currentSessionMarkers.forEach(function(marker) { map.removeLayer(marker); });
       currentSessionMarkers = [];
       if (currentSessionPolyline) { map.removeLayer(currentSessionPolyline); currentSessionPolyline = null; }
-      // 再生成：出発地点
       if (data.start) {
         startMarker = L.marker(data.start, { draggable: true })
                        .addTo(map)
@@ -418,13 +431,13 @@
       data.sessions.forEach(function(sess, sIdx) {
         sessions.push(sess);
         var pts = [];
-        // 基準値は、セッション 0 なら 0、以降は前のセッションの最終更新値
         var baseline = (sIdx === 0) ? 0 : data.sessions[sIdx-1].updates[data.sessions[sIdx-1].updates.length - 1].cumulative;
         var sessionDistance = sess.updates[sess.updates.length - 1].cumulative - baseline;
         sess.updates.forEach(function(update, idx) {
           pts.push(L.latLng(update.lat, update.lng));
           var markerContent = "<div class='update-marker' style='background:" + sess.color + "'></div>";
           var m = L.marker(L.latLng(update.lat, update.lng), { 
+              // ドラッグ不可
               icon: L.divIcon({ 
                 html: markerContent, 
                 className: "", 
