@@ -378,20 +378,22 @@
     
     /***** 「ルートリセット」ボタン *****/
     document.getElementById('resetBtn').addEventListener('click', function() {
-      // すべてのレイヤー（TileLayer以外）を一括削除する方法
+      // 全レイヤーを配列に格納
       var layers = [];
       map.eachLayer(function(layer) {
         layers.push(layer);
       });
-      layers.forEach(function(layer) {
+      // TileLayer以外のすべてのレイヤーを削除
+          layers.forEach(function(layer) {
         if (!(layer instanceof L.TileLayer)) {
-          map.removeLayer(layer);
-        }
+      map.removeLayer(layer);
+    }
       });
-      // 変数リセット
+      // グローバル変数のリセット
       sessions = [];
       currentSession = [];
       currentSessionMarkers = [];
+      savedSessionMarkers = [];
       startMarker = null;
       updateTotalDistanceDisplay();
       document.getElementById("sessionDistance").innerText = "0.00";
