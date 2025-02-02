@@ -2,38 +2,71 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>エアロバイク 中継点更新アプリ２</title>
+  <title>エアロバイク 中継点更新アプリ３</title>
   <!-- LeafletのCSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      background-color: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-      color: #333;
+    /* コンテナ全体を相対配置 */
+    #container {
+      position: relative;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
     }
-    h1, h2 { color: #333; }
-    /* MAP表示領域：横100%、高さ600px */
+    /* MAPは画面全体に表示 */
     #map {
-      height: 600px;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-bottom: 10px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
-    .controls { margin-bottom: 10px; }
-    button {
-      background-color: #007bff;
-      border: none;
-      border-radius: 4px;
-      color: #fff;
-      padding: 8px 12px;
-      margin-right: 5px;
-      cursor: pointer;
+    /* オーバーレイパネル（上部と下部） */
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none; /* 背景は透過し、内部は個別に操作可能 */
     }
-    button:hover { background-color: #0056b3; }
-    /* 中継点マーカー：連番なしのシンプルな円形アイコン（サイズ24×24、中心表示） */
+    /* 上部：タイトル入力用 */
+    #topControls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      pointer-events: auto;
+      text-align: center;
+    }
+    /* 下部：各種コントロールパネル */
+    #bottomControls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      pointer-events: auto;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+    }
+    /* 各コントロールのスタイル */
+    .controls button, .controls select, .controls input {
+      margin: 5px;
+      font-size: 16px;
+    }
+    /* MAPタイトル入力 */
+    #mapTitle {
+      padding: 4px 8px;
+      font-size: 16px;
+      width: 80%;
+    }
+    /* 数値表示 */
+    .display {
+      font-size: 18px;
+      margin: 5px 0;
+    }
+    /* 中継点マーカー：シンプルな円形（サイズ24×24、中央表示） */
     .update-marker {
       background-color: inherit;
       border: 2px solid #fff;
@@ -44,11 +77,7 @@
       line-height: 24px;
       box-shadow: 0 0 6px rgba(0,0,0,0.3);
     }
-    /* Google Mapsリンク用 */
-    #gmapsLinkContainer {
-      margin-top: 20px;
-      text-align: center;
-    }
+    /* Google Mapsリンク */
     #gmapsLink {
       display: inline-block;
       background-color: #28a745;
@@ -56,70 +85,37 @@
       text-decoration: none;
       padding: 10px 16px;
       border-radius: 4px;
+      font-size: 16px;
     }
     #gmapsLink:hover { background-color: #218838; }
-    /* MAPタイトル入力 */
-    #mapTitleContainer {
-      margin-bottom: 10px;
-    }
-    #mapTitle {
-      padding: 4px 8px;
-      font-size: 16px;
-      width: 300px;
-    }
-    /* 「今回の走行距離」表示 */
-    #sessionDistanceContainer {
-      margin-bottom: 10px;
-    }
   </style>
 </head>
 <body>
-  <h1>エアロバイク 中継点更新アプリ</h1>
-  <p>
-    ※マップ上をクリックして、まず出発地点を設定してください。<br>
-    出発後は、クリックするたびに中継点が追加され、累積走行距離が更新されます。<br>
-    「保存」ボタンを押すと、現在までの新規中継点群が１セッションとして記録され、保存日時とそのセッション内の更新分の走行距離が記録されます。<br>
-    保存済みの更新セッションの各中継点をタップすると、そのセッションの保存日時と、その日の更新（セッション内）での走行距離が表示されます。
-  </p>
-  
-  <!-- MAPタイトル入力 -->
-  <div id="mapTitleContainer">
-    <label for="mapTitle">MAPタイトル: </label>
-    <input type="text" id="mapTitle" placeholder="タイトルを入力">
-  </div>
-  
-  <!-- 地図表示エリア -->
-  <div id="map"></div>
-  
-  <div class="controls">
-    <button id="resetBtn">ルートリセット</button>
-  </div>
-  
-  <div>
-    <h2>現在の累積走行距離: <span id="totalDistance">0.00</span> km</h2>
-  </div>
-  
-  <!-- 「今回の走行距離」表示エリア -->
-  <div id="sessionDistanceContainer">
-    <h2>今回の走行距離: <span id="sessionDistance">0.00</span> km</h2>
-  </div>
-  
-  <!-- 保存・ロード・CSV出力エリア -->
-  <div class="controls">
-    <fieldset>
-      <legend>保存済みデータ</legend>
-      <button id="saveBtn">保存</button>
-      <select id="savedSelect"></select>
-      <button id="loadBtn">選択してロード</button>
-      <button id="clearDataBtn">全保存データ削除</button>
-      <button id="exportCsvBtn">CSV出力</button>
-    </fieldset>
-  </div>
-  
-  <!-- Google Maps リンク表示エリア -->
-  <div id="gmapsLinkContainer">
-    <h2>現在地（Google Mapsリンク）</h2>
-    <a id="gmapsLink" href="#" target="_blank">現在地を見る</a>
+  <div id="container">
+    <div id="map"></div>
+    <div id="overlay">
+      <div id="topControls">
+        <input type="text" id="mapTitle" placeholder="タイトルを入力">
+      </div>
+      <div id="bottomControls">
+        <div class="display">現在の累積走行距離: <span id="totalDistance">0.00</span> km</div>
+        <div class="display">今回の走行距離: <span id="sessionDistance">0.00</span> km</div>
+        <div>
+          <button id="cancelBtn">最新更新をキャンセル</button>
+          <button id="saveBtn">保存</button>
+          <button id="resetBtn">ルートリセット</button>
+          <button id="loadBtn">ロード</button>
+          <button id="clearDataBtn">全保存データ削除</button>
+          <button id="exportCsvBtn">CSV出力</button>
+        </div>
+        <div>
+          <select id="savedSelect"></select>
+        </div>
+        <div id="gmapsLinkContainer">
+          <a id="gmapsLink" href="#" target="_blank">現在地を見る</a>
+        </div>
+      </div>
+    </div>
   </div>
   
   <!-- LeafletのJavaScript -->
@@ -167,18 +163,15 @@
     function updateTotalDistanceDisplay() {
       document.getElementById('totalDistance').innerText = getTotalDistance().toFixed(2);
     }
-    // 「今回の走行距離」表示については、基準を「前回の最後の更新点」(保存済みがあればその最終更新、なければ未保存セッションの最初の更新点)とする
+    // 「今回の走行距離」＝未保存セッションの場合は、基準を「前回の最後の更新点」(保存済みがあればその最終更新、なければ未保存セッションの最初)とする
     function updateCurrentSessionDistance() {
       var sd = 0;
       if (currentSession.length > 0) {
         var base = 0;
-        if (sessions.length > 0) {
-          var lastSaved = sessions[sessions.length - 1].updates;
-          if (lastSaved.length > 0) {
-            base = lastSaved[lastSaved.length - 1].cumulative;
-          }
+        if (sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) {
+          base = sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative;
         } else {
-          base = currentSession[0].cumulative;  // 未保存セッションが最初の場合
+          base = currentSession[0].cumulative;
         }
         sd = currentSession[currentSession.length - 1].cumulative - base;
       }
@@ -218,37 +211,31 @@
       }
     }
     
-    /***** 長押しによる最新ポイント削除（ポップアップなし） *****/
-    function attachLongPressListener(marker) {
-      var pressTimer;
-      marker.on('mousedown touchstart', function(e) {
-        pressTimer = window.setTimeout(function() {
-          if (currentSessionMarkers.length > 0 && currentSessionMarkers[currentSessionMarkers.length - 1] === marker) {
-            map.removeLayer(marker);
-            currentSessionMarkers.pop();
-            currentSession.pop();
-            redrawCurrentSessionPolyline();
-            updateTotalDistanceDisplay();
-            updateCurrentSessionDistance();
-            var newLinkLatLng = null;
-            if (currentSession.length > 0) {
-              newLinkLatLng = L.latLng(currentSession[currentSession.length - 1].lat, currentSession[currentSession.length - 1].lng);
-            } else if (sessions.length > 0) {
-              var lastSess = sessions[sessions.length - 1];
-              if (lastSess.updates.length > 0) {
-                newLinkLatLng = L.latLng(lastSess.updates[lastSess.updates.length - 1].lat, lastSess.updates[lastSess.updates.length - 1].lng);
-              }
-            } else if (startMarker) {
-              newLinkLatLng = startMarker.getLatLng();
-            }
-            updateGoogleMapLink(newLinkLatLng);
+    /***** 最新更新のキャンセルボタン処理 *****/
+    document.getElementById("cancelBtn").addEventListener("click", function() {
+      if (currentSessionMarkers.length > 0) {
+        var marker = currentSessionMarkers.pop();
+        map.removeLayer(marker);
+        currentSession.pop();
+        redrawCurrentSessionPolyline();
+        updateTotalDistanceDisplay();
+        updateCurrentSessionDistance();
+        var newLinkLatLng = null;
+        if (currentSession.length > 0) {
+          newLinkLatLng = L.latLng(currentSession[currentSession.length - 1].lat, currentSession[currentSession.length - 1].lng);
+        } else if (sessions.length > 0) {
+          var lastSess = sessions[sessions.length - 1];
+          if (lastSess.updates.length > 0) {
+            newLinkLatLng = L.latLng(lastSess.updates[lastSess.updates.length - 1].lat, lastSess.updates[lastSess.updates.length - 1].lng);
           }
-        }, 1000);
-      });
-      marker.on('mouseup touchend mouseout', function(e) {
-        clearTimeout(pressTimer);
-      });
-    }
+        } else if (startMarker) {
+          newLinkLatLng = startMarker.getLatLng();
+        }
+        updateGoogleMapLink(newLinkLatLng);
+      } else {
+        alert("未保存の更新点がありません。");
+      }
+    });
     
     /***** MAP上クリック時の処理（未保存セッション用） *****/
     map.on('click', function(e) {
@@ -294,7 +281,6 @@
       .addTo(map)
       .bindPopup("中継点<br>累積距離: " + newCumulative.toFixed(2) + " km<br>今回の走行距離: " + (currentSession.length >= 1 ? (currentSession[currentSession.length-1].cumulative - ((sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) ? sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative : currentSession[0].cumulative)).toFixed(2) : "0.00") + " km");
       currentSessionMarkers.push(marker);
-      attachLongPressListener(marker);
       redrawCurrentSessionPolyline();
       updateTotalDistanceDisplay();
       updateCurrentSessionDistance();
@@ -322,8 +308,9 @@
           previousCumulative = lastSess.updates[lastSess.updates.length - 1].cumulative;
         }
       }
-      // 「今回の走行距離」は、未保存セッションの場合は前回の最後の更新点（保存済みがあればその最終更新、なければその日の最初の更新）を基準とする
-      var sessionDistance = currentSession[currentSession.length - 1].cumulative - ((sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) ? sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative : currentSession[0].cumulative);
+      // 「今回の走行距離」は、保存済みがあればその最終更新点を基準、なければ未保存セッションの最初を基準
+      var base = (sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) ? sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative : currentSession[0].cumulative;
+      var sessionDistance = currentSession[currentSession.length - 1].cumulative - base;
       var sessionObj = {
         sessionDatetime: saveDatetime,
         updates: currentSession.slice(),
@@ -381,7 +368,6 @@
       sessions = [];
       currentSession = [];
       currentSessionMarkers = [];
-      savedSessionMarkers = [];
       startMarker = null;
       updateTotalDistanceDisplay();
       document.getElementById("sessionDistance").innerText = "0.00";
@@ -407,7 +393,8 @@
     }
     
     /***** 保存済みデータのロード処理 *****/
-    // ※保存済みセッションの各中継点マーカーはドラッグ不可とし、ポップアップはそのセッションの保存日時と【今回の走行距離】（＝前回最後の更新点を基準とした差分）を表示
+    // 保存済みセッションの各中継点マーカーはドラッグ不可とし、ポップアップはそのセッションの保存日時と、
+    // 前セッションの最終更新値を基準とした「今回の走行距離」を表示します。
     function loadData(index) {
       var data = savedDataList[index];
       if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
@@ -421,7 +408,7 @@
       currentSessionMarkers.forEach(function(marker) { map.removeLayer(marker); });
       currentSessionMarkers = [];
       if (currentSessionPolyline) { map.removeLayer(currentSessionPolyline); currentSessionPolyline = null; }
-      savedSessionMarkers = []; // 再生成用
+      // 再生成：出発地点
       if (data.start) {
         startMarker = L.marker(data.start, { draggable: true })
                        .addTo(map)
@@ -431,14 +418,13 @@
       data.sessions.forEach(function(sess, sIdx) {
         sessions.push(sess);
         var pts = [];
-        // 基準値として、前のセッションの最後の更新値を使用。セッション 0 なら 0 を使用
+        // 基準値は、セッション 0 なら 0、以降は前のセッションの最終更新値
         var baseline = (sIdx === 0) ? 0 : data.sessions[sIdx-1].updates[data.sessions[sIdx-1].updates.length - 1].cumulative;
         var sessionDistance = sess.updates[sess.updates.length - 1].cumulative - baseline;
         sess.updates.forEach(function(update, idx) {
           pts.push(L.latLng(update.lat, update.lng));
           var markerContent = "<div class='update-marker' style='background:" + sess.color + "'></div>";
           var m = L.marker(L.latLng(update.lat, update.lng), { 
-              // ドラッグ不可
               icon: L.divIcon({ 
                 html: markerContent, 
                 className: "", 
@@ -496,7 +482,6 @@
         var startLat = item.start ? item.start.lat : "";
         var startLng = item.start ? item.start.lng : "";
         item.sessions.forEach(function(sess, sIdx) {
-          // 基準は、セッション 0 なら 0、以降は前セッションの最終更新値
           var baseline = (sIdx === 0) ? 0 : item.sessions[sIdx-1].updates[item.sessions[sIdx-1].updates.length - 1].cumulative;
           var sessionDistance = sess.updates[sess.updates.length - 1].cumulative - baseline;
           sess.updates.forEach(function(upd, uIdx) {
@@ -534,22 +519,6 @@
         document.getElementById("savedSelect").value = idx;
       }
     };
-    
-    // ※ 未保存セッションの「今回の走行距離」表示更新
-    function updateCurrentSessionDistance() {
-      var sd = 0;
-      if (currentSession.length > 0) {
-        var base = 0;
-        if (sessions.length > 0 && sessions[sessions.length-1].updates.length > 0) {
-          base = sessions[sessions.length-1].updates[sessions[sessions.length-1].updates.length - 1].cumulative;
-        } else {
-          base = currentSession[0].cumulative;
-        }
-        sd = currentSession[currentSession.length - 1].cumulative - base;
-      }
-      document.getElementById("sessionDistance").innerText = sd.toFixed(2);
-    }
-    var updateSessionDistanceDisplay = updateCurrentSessionDistance;
     
   </script>
 </body>
