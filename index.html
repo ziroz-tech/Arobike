@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>水耕栽培グッズショップ</title>
+  <!-- Google Fonts等を利用してモダンな雰囲気に -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Global Styles */
+    body {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      color: #333;
+      background-color: #f4f4f4;
+      line-height: 1.6;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: auto;
+    }
+    /* Header */
+    header {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+    }
+    .nav ul {
+      list-style: none;
+      display: flex;
+      margin: 0;
+      padding: 0;
+    }
+    .nav li {
+      margin-left: 2rem;
+    }
+    /* Hero Section */
+    .hero {
+      background: url('https://via.placeholder.com/1200x600') center/cover no-repeat;
+      height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+    .hero .content {
+      position: relative;
+      z-index: 1;
+      max-width: 90%;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      margin: 0 0 1rem;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    .cta-btn {
+      padding: 0.75rem 1.5rem;
+      background-color: #28a745;
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .cta-btn:hover {
+      background-color: #218838;
+    }
+    /* Products Section */
+    .products {
+      padding: 2rem 0;
+    }
+    .products h2 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+    .product-item {
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .product-item:hover {
+      transform: translateY(-5px);
+    }
+    .product-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .product-info {
+      padding: 1rem;
+    }
+    .product-info h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #333;
+    }
+    .product-info p {
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      color: #666;
+    }
+    /* Info Section */
+    .info {
+      padding: 2rem 0;
+      background: #fff;
+    }
+    .info h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+    .info p {
+      max-width: 800px;
+      margin: auto;
+      text-align: center;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #555;
+    }
+    /* Footer */
+    footer {
+      background: #333;
+      color: #fff;
+      text-align: center;
+      padding: 1rem 0;
+    }
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+      .nav li {
+        margin-left: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header>
+    <div class="container nav">
+      <div class="logo">
+        <h2>水耕栽培グッズ</h2>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#">ホーム</a></li>
+          <li><a href="#">商品一覧</a></li>
+          <li><a href="#">お知らせ</a></li>
+          <li><a href="#">お問い合わせ</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="content">
+      <h1>未来の農業、今ここに</h1>
+      <p>おしゃれでモダンな水耕栽培グッズが勢揃い</p>
+      <button class="cta-btn">今すぐチェック</button>
+    </div>
+  </section>
+
+  <!-- Products Section -->
+  <section class="products container">
+    <h2>おすすめ商品</h2>
+    <div class="product-grid">
+      <div class="product-item">
+        <img src="https://via.placeholder.com/400x300" alt="水耕栽培キット A">
+        <div class="product-info">
+          <h3>水耕栽培キット A</h3>
+          <p>コンパクトで手軽に始められるモデル</p>
+        </div>
+      </div>
+      <div class="product-item">
+        <img src="https://via.placeholder.com/400x300" alt="自動給水システム">
+        <div class="product-info">
+          <h3>自動給水システム</h3>
+          <p>最新技術を駆使した水管理システム</p>
+        </div>
+      </div>
+      <div class="product-item">
+        <img src="https://via.placeholder.com/400x300" alt="LED栽培ライト">
+        <div class="product-info">
+          <h3>LED栽培ライト</h3>
+          <p>効率的な光環境で植物の成長をサポート</p>
+        </div>
+      </div>
+      <div class="product-item">
+        <img src="https://via.placeholder.com/400x300" alt="養液供給セット">
+        <div class="product-info">
+          <h3>養液供給セット</h3>
+          <p>バランスの良い栄養補給が可能なセット</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Information / Marketing Section -->
+  <section class="info">
+    <div class="container">
+      <h2>水耕栽培の魅力</h2>
+      <p>
+        水耕栽培は土を使わず、必要な栄養素と水分だけで植物を育てる革新的な方法です。環境に配慮したスマートな栽培システムで、手軽に始められるため、都市生活者にも大変人気です。
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 水耕栽培グッズショップ. All rights reserved.</p>
+  </footer>
+</body>
+</html>
